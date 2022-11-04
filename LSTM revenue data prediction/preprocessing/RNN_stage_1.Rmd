@@ -1,0 +1,60 @@
+---
+title: "Appendix C"
+output: html_notebook
+---
+
+Data cleaning for RNN training.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+raw <- read.csv("D:\\5291_data\\5291.csv", encoding="UTF-8")
+head(raw)
+```
+
+Revenue data is in string format, change it to float number.
+```{r}
+to_num_revenue <- function(x){
+  s <- str_replace_all(x, c("\\$"="", "," = "" ))
+  return(as.numeric(s))
+}
+
+# baby_raw is a reduced dataframe
+baby_raw = raw%>%
+  select(Statement.Month,Release.Name, Net.Revenue.USD)%>%
+  mutate(Net.Revenue.USD_num =  to_num_revenue(Net.Revenue.USD))%>%
+  select(-Net.Revenue.USD)%>%
+  group_by(Statement.Month,Release.Name)%>%
+  summarise(Net.Revenue.USD_sum = sum(Net.Revenue.USD_num))
+
+name_month_revenue <- baby_raw%>%
+  pivot_wider(names_from = Release.Name,values_from = Net.Revenue.USD_sum)%>%
+  arrange(Statement.Month)
+
+name_month_revenue[is.na(name_month_revenue)] <- 0
+
+ggplot(data =baby_raw) + 
+  geom_point(mapping = aes(x = Statement.Month, y = Net.Revenue.USD_sum))
+
+```
+We get 44*255 dataframe, representing 44 months and 255 songs. Now, writing two dataframes to csv files for later use in jupyter notebook.
+```{r}
+revenue_by_month <- name_month_revenue%>%
+  select(Statement.Month)
+revenue_by_month$average_revenue <- rowSums(name_month_revenue[,c(2:44)])
+
+### write to csv
+readr::write_csv(revenue_by_month, "output/revenue_by_month.csv")
+readr::write_csv(name_month_revenue, "output/name_month_revenue.csv")
+
+```
+
+Finally, lets take a look at popular songs. We define popular songs by songs whose revenue is over 12500$ in a single month. Only four songs satisfy the definition.
+```{r}
+popular_song <- baby_raw%>%
+  filter(Net.Revenue.USD_sum>=12500)
+unique(popular_song$Release.Name)
+```
+
+
+
