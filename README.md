@@ -1,4 +1,4 @@
-# ECBM W4040 2021 Fall
+# Neural Network & Deep Learning projects
 
 # assignment 1
 1. Compiled basic classifiers: logistic regression and softmax classifier, including implementation of all layer functions.
